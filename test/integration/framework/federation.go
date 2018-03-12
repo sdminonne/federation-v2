@@ -25,6 +25,7 @@ import (
 	"github.com/marun/fnord/pkg/controller/util"
 	"github.com/marun/fnord/test/common"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -63,8 +64,12 @@ func SetUpFederationFixture(tl common.TestLogger, clusterCount int) *FederationF
 func (f *FederationFixture) setUp(tl common.TestLogger, clusterCount int) {
 	defer TearDownOnPanic(tl, f)
 
+	tl.Logf("In FederationFixture.setUp 1")
+
 	f.CrApi = SetUpClusterRegistryApiFixture(tl)
+	tl.Logf("In FederationFixture.setUp 2")
 	f.FedApi = SetUpFederationApiFixture(tl)
+	tl.Logf("In FederationFixture.setUp 3")
 
 	f.Clusters = make(map[string]*KubernetesApiFixture)
 	for i := 0; i < clusterCount; i++ {
@@ -100,11 +105,16 @@ func (f *FederationFixture) TearDown(tl common.TestLogger) {
 	for _, fixture := range fixtures {
 		fixture.TearDown(tl)
 	}
+	tl.Log("FederationFixture.TearDown")
 }
 
 // AddCluster adds a new member cluster to the federation.
 func (f *FederationFixture) AddMemberCluster(tl common.TestLogger) string {
+	tl.Logf("In FederationFixture.AddMemeberCluster!")
+
 	kubeApi := SetUpKubernetesApiFixture(tl)
+
+	tl.Logf("In FederationFixture.AddMemeberCluster 2")
 
 	// Pick the first added cluster to be the primary
 	if f.KubeApi == nil {
@@ -112,11 +122,16 @@ func (f *FederationFixture) AddMemberCluster(tl common.TestLogger) string {
 	}
 
 	clusterName := f.registerCluster(tl, kubeApi.Host)
+	tl.Logf("In FederationFixture.AddMemeberCluster 30")
 	secretName := f.createSecret(tl, kubeApi, clusterName)
+	tl.Logf("In FederationFixture.AddMemeberCluster 31")
 	f.createFederatedCluster(tl, clusterName, secretName)
+	tl.Logf("In FederationFixture.AddMemeberCluster 32")
 
 	// Track clusters by name
 	f.Clusters[clusterName] = kubeApi
+
+	tl.Logf("At end of FederationFixture.AddMemeberCluster!")
 
 	return clusterName
 }
@@ -146,6 +161,17 @@ func (f *FederationFixture) registerCluster(tl common.TestLogger, host string) s
 	return cluster.Name
 }
 
+func (f *FederationFixture) ensureNamespace(tl common.TestLogger) error {
+	kubeClient := f.KubeApi.NewClient(tl, userAgent)
+
+	_, err := kubeClient.CoreV1().Namespaces().Create(&apiv1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: util.FederationSystemNamespace,
+		},
+	})
+	return err
+}
+
 // createSecret creates a secret resource containing the credentials
 // necessary to access the fixture-managed cluster.
 func (f *FederationFixture) createSecret(tl common.TestLogger, clusterFixture *KubernetesApiFixture, clusterName string) string {
@@ -153,6 +179,7 @@ func (f *FederationFixture) createSecret(tl common.TestLogger, clusterFixture *K
 	// Cluster resource.
 	config := clusterFixture.SecureConfigFixture.NewClientConfig(tl, "")
 	kubeConfig := CreateKubeConfig(config)
+	tl.Log("FedarionFixture.createSecret 0")
 
 	// Flatten the kubeconfig to ensure that all the referenced file
 	// contents are inlined.
@@ -160,14 +187,21 @@ func (f *FederationFixture) createSecret(tl common.TestLogger, clusterFixture *K
 	if err != nil {
 		tl.Fatal(err)
 	}
+	tl.Log("FedarionFixture.createSecret 1")
 	configBytes, err := clientcmd.Write(*kubeConfig)
 	if err != nil {
+		tl.Fatal(err)
+	}
+	tl.Log("FedarionFixture.createSecret 3")
+
+	if err := f.ensureNamespace(tl); err != nil && !errors.IsAlreadyExists(err) {
 		tl.Fatal(err)
 	}
 
 	// Build the secret object with the flattened kubeconfig content.
 	// TODO(marun) enforce some kind of relationship between federated cluster and secret?
 	kubeClient := f.KubeApi.NewClient(tl, userAgent)
+
 	secret, err := kubeClient.CoreV1().Secrets(util.FederationSystemNamespace).Create(&apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-credentials", clusterName),
