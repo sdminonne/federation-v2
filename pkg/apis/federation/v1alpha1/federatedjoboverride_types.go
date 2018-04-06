@@ -52,6 +52,7 @@ type FederatedJobClusterOverride struct {
 	// once.  Why can't maps be used so this validation is automatic?
 	ClusterName string
 	Parallelism *int32 `json:"parallelism,omitempty"`
+	Completions *int32 `json:"completions,omitempty"`
 }
 
 // FederatedJobOverrideStatus defines the observed state of FederatedJobOverride

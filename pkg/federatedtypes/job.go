@@ -86,6 +86,7 @@ func (a *FederatedJobAdapter) ObjectForCluster(template, override pkgruntime.Obj
 		for _, clusterOverride := range jobOverride.Spec.Overrides {
 			if clusterOverride.ClusterName == clusterName {
 				job.Spec.Parallelism = clusterOverride.Parallelism
+				job.Spec.Completions = clusterOverride.Completions // TODO check this
 				break
 			}
 		}
@@ -327,6 +328,7 @@ func NewFederatedJobObjectsForTest(namespace string, clusterNames []string) (tem
 				},
 				Spec: batchv1.JobSpec{
 					Parallelism: &one, // defaulted by APIserver
+					Completions: &one,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: labels,
 					},
@@ -372,6 +374,7 @@ func NewFederatedJobObjectsForTest(namespace string, clusterNames []string) (tem
 				{
 					ClusterName: clusterName,
 					Parallelism: &two,
+					Completions: &two,
 				},
 			},
 		},
