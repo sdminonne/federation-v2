@@ -1333,6 +1333,7 @@ func Convert_federation_FederatedJob_To_v1alpha1_FederatedJob(in *federation.Fed
 func autoConvert_v1alpha1_FederatedJobClusterOverride_To_federation_FederatedJobClusterOverride(in *FederatedJobClusterOverride, out *federation.FederatedJobClusterOverride, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
 	out.Parallelism = (*int32)(unsafe.Pointer(in.Parallelism))
+	out.Completions = (*int32)(unsafe.Pointer(in.Completions))
 	return nil
 }
 
@@ -1344,6 +1345,7 @@ func Convert_v1alpha1_FederatedJobClusterOverride_To_federation_FederatedJobClus
 func autoConvert_federation_FederatedJobClusterOverride_To_v1alpha1_FederatedJobClusterOverride(in *federation.FederatedJobClusterOverride, out *FederatedJobClusterOverride, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
 	out.Parallelism = (*int32)(unsafe.Pointer(in.Parallelism))
+	out.Completions = (*int32)(unsafe.Pointer(in.Completions))
 	return nil
 }
 

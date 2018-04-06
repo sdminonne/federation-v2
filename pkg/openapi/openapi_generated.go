@@ -1381,6 +1381,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Format: "int32",
 							},
 						},
+						"completions": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"integer"},
+								Format: "int32",
+							},
+						},
 					},
 					Required: []string{"ClusterName"},
 				},
